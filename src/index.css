@@ -1,0 +1,78 @@
+@import "tailwindcss";
+
+@theme {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-primary: var(--primary);
+  --color-secondary: var(--secondary);
+  --color-button: var(--button);
+  --color-button-hover: var(--button-hover);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-border: var(--border);
+  --color-success: var(--success);
+  --color-error: var(--error);
+}
+
+@layer base {
+  :root {
+    /* Light Mode */
+    --background: #F9FAFB;
+    --surface: #FFFFFF;
+    --primary: #FF6B35;
+    --secondary: #FFB347;
+    --button: #FF6B35;
+    --button-hover: #E85A24;
+    --text-primary: #111827;
+    --text-secondary: #4B5563;
+    --border: #E5E7EB;
+    --success: #22C55E;
+    --error: #EF4444;
+  }
+
+  .dark {
+    /* Dark Mode - Charcoal Black Theme */
+    --background: #0F1115;
+    --surface: #1A1D24;
+    --primary: #FF6B35;
+    --secondary: #FFB347;
+    --button: #FF6B35;
+    --button-hover: #E85A24;
+    --text-primary: #FFFFFF;
+    --text-secondary: #A7B0BE;
+    --border: #2A2E36;
+    --success: #22C55E;
+    --error: #EF4444;
+  }
+}
+
+@layer base {
+  body {
+    background-color: var(--background);
+    color: var(--text-primary);
+    transition-property: color, background-color;
+    transition-duration: 300ms;
+  }
+}
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .print-invoice, .print-invoice * {
+    visibility: visible;
+  }
+  .print-invoice {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    padding: 20px;
+    box-shadow: none !important;
+    border: none !important;
+  }
+  .print-hide {
+    display: none !important;
+  }
+}

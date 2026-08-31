@@ -1,0 +1,6 @@
+{
+  "name": "Firewood",
+  "description": "A premium digital marketplace for creators, editors, motion designers, and freelancers.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

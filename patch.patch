@@ -1,0 +1,36 @@
+--- src/pages/ProductDetails.tsx
++++ src/pages/ProductDetails.tsx
+@@ -53,6 +53,27 @@
+   };
+ 
++  const productSchema = {
++    "@context": "https://schema.org/",
++    "@type": "Product",
++    "name": product.title,
++    "image": [
++      displayImage
++    ],
++    "description": product.description,
++    "sku": product.id,
++    "offers": {
++      "@type": "Offer",
++      "url": window.location.href,
++      "priceCurrency": "INR",
++      "price": product.price,
++      "availability": "https://schema.org/InStock",
++      "seller": {
++        "@type": "Organization",
++        "name": "Firewood Assets"
++      }
++    }
++  };
++
+   return (
+     <div className="container mx-auto px-4 py-12 relative">
+       <SEO 
+         title={`${product.title} | FireWood`} 
+         description={product.description} 
+-        image={product.imageUrl}
++        image={product.imageUrl}
++        schema={productSchema}
+       />

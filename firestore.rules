@@ -1,0 +1,59 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    function getUserRole() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+    
+    function isSuperAdmin() {
+      return request.auth != null && (
+        request.auth.token.email == 'nikhilcoder2222@gmail.com' || 
+        request.auth.token.email == 'animerepear620@gmail.com' ||
+        getUserRole() == 'super_admin'
+      );
+    }
+    
+    function isProductAdmin() {
+      return isSuperAdmin() || getUserRole() == 'product_admin';
+    }
+    
+    function isCouponAdmin() {
+      return isSuperAdmin() || getUserRole() == 'coupon_admin';
+    }
+    
+    function isSupportAdmin() {
+      return isSuperAdmin() || getUserRole() == 'support_admin';
+    }
+
+    match /users/{userId} {
+      allow read: if request.auth != null && (request.auth.uid == userId || isSuperAdmin());
+      allow write: if isSuperAdmin();
+    }
+
+    match /products/{productId} {
+      allow read: if true;
+      allow write: if isProductAdmin();
+    }
+    
+    match /coupons/{couponId} {
+      allow read: if isCouponAdmin(); // users will validate via backend
+      allow write: if isCouponAdmin();
+    }
+
+    match /contact_messages/{messageId} {
+      allow create: if true; // anyone can submit contact us
+      allow read, update, delete: if isSupportAdmin();
+    }
+    
+    match /purchases/{purchaseId} {
+      allow read: if request.auth != null && (request.auth.token.email == resource.data.userEmail || isSuperAdmin());
+      allow create: if request.auth != null; // We can let them create for now, or via backend
+      allow update, delete: if isSuperAdmin();
+    }
+
+    match /mail/{mailId} {
+      allow create: if request.auth != null;
+    }
+  }
+}

@@ -3,6 +3,12 @@ import { persist } from 'zustand/middleware';
 import type { User } from 'firebase/auth';
 import { mockProducts } from './data';
 
+
+export interface Category {
+  id: string;
+  name: string;
+}
+
 export interface Product {
   id: string;
   title: string;
@@ -66,6 +72,11 @@ interface AppState {
   removeFromCart: (productId: string) => void;
   clearCart: () => void;
 
+  categories: Category[];
+  setCategories: (categories: Category[]) => void;
+  addCategory: (category: Category) => void;
+  removeCategory: (id: string) => void;
+
   products: Product[];
   setProducts: (products: Product[]) => void;
   addProduct: (product: Product) => void;
@@ -93,6 +104,11 @@ interface AppState {
 export const useAppStore = create<AppState>()(
   persist(
     (set) => ({
+      categories: [],
+      setCategories: (categories) => set({ categories }),
+      addCategory: (category) => set((state) => ({ categories: [...state.categories, category] })),
+      removeCategory: (id) => set((state) => ({ categories: state.categories.filter(c => c.id !== id) })),
+
       theme: 'system',
       setTheme: (theme) => set({ theme }),
 
@@ -148,7 +164,7 @@ export const useAppStore = create<AppState>()(
     }),
     {
       name: 'firewood-storage',
-      partialize: (state) => ({ theme: state.theme, cart: state.cart, products: state.products, purchases: state.purchases, reviews: state.reviews, wishlist: state.wishlist, coupons: state.coupons,   }),
+      partialize: (state) => ({ theme: state.theme, cart: state.cart, products: state.products, purchases: state.purchases, reviews: state.reviews, wishlist: state.wishlist, coupons: state.coupons, categories: state.categories,  }),
     }
   )
 );

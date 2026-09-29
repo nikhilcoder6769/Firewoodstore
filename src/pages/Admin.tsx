@@ -12,7 +12,9 @@ import { formatPrice } from '../lib/currency';
 import { useAdmin } from '../hooks/useAdmin';
 
 export function Admin() {
-  const { user, products, addProduct, removeProduct, coupons, addCoupon, removeCoupon } = useAppStore();
+  const { user, products, addProduct, removeProduct, coupons, addCoupon, removeCoupon, categories } = useAppStore();
+  const [isManageCategoriesOpen, setIsManageCategoriesOpen] = useState(false);
+  const [newCategory, setNewCategory] = useState({ id: '', name: '' });
   const adminRoles = useAdmin();
   
   const [isAddProductOpen, setIsAddProductOpen] = useState(false);
@@ -221,6 +223,12 @@ export function Admin() {
             >
               📦 Manage Products
             </button>}
+            {adminRoles.isProductAdmin && <button 
+              onClick={() => setIsManageCategoriesOpen(true)}
+              className="w-full text-left px-4 py-3 bg-background hover:bg-border/50 border border-border rounded-lg font-medium transition-colors"
+            >
+              🏷️ Manage Categories
+            </button>}
             <button 
               onClick={() => isAdmin && setIsCouponModalOpen(true)} 
               className="w-full text-left px-4 py-3 bg-background hover:bg-border/50 border border-border rounded-lg font-medium transition-colors"
@@ -275,11 +283,14 @@ export function Admin() {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-text-secondary mb-1">Category</label>
+                    
                     <select className="w-full bg-background border border-border rounded-xl px-4 py-2" value={newProduct.category} onChange={e => setNewProduct({...newProduct, category: e.target.value})}>
-                      <option value="cc">CC (Colour Correction)</option>
-                      <option value="thumbnails">Thumbnails</option>
-                      <option value="templates">Templates</option>
+                      {categories.map(c => (
+                        <option key={c.id} value={c.id}>{c.name}</option>
+                      ))}
+                      {categories.length === 0 && <option value="cc">CC (Colour Correction)</option>}
                     </select>
+
                   </div>
                 </div>
                 {newProduct.category === 'cc' ? (
@@ -329,6 +340,90 @@ export function Admin() {
         </div>
       )}
 
+      
+      {/* Manage Categories Modal */}
+      {isManageCategoriesOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-surface border border-border w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden relative max-h-[80vh] flex flex-col">
+            <button 
+              onClick={() => setIsManageCategoriesOpen(false)}
+              className="absolute top-4 right-4 p-2 text-text-secondary hover:text-text-primary rounded-full hover:bg-background transition-colors z-10"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <div className="p-8 flex-1 overflow-y-auto">
+              <h2 className="text-2xl font-bold mb-6">Manage Categories</h2>
+              
+              <div className="bg-background border border-border p-6 rounded-xl mb-8">
+                <h3 className="font-bold mb-4">Add New Category</h3>
+                <div className="flex gap-4">
+                  <input 
+                    type="text" 
+                    placeholder="Category ID (e.g. tools)" 
+                    value={newCategory.id}
+                    onChange={e => setNewCategory({...newCategory, id: e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, '')})}
+                    className="flex-1 bg-surface border border-border rounded-xl px-4 py-2 text-sm"
+                  />
+                  <input 
+                    type="text" 
+                    placeholder="Display Name (e.g. Tools & Plugins)" 
+                    value={newCategory.name}
+                    onChange={e => setNewCategory({...newCategory, name: e.target.value})}
+                    className="flex-1 bg-surface border border-border rounded-xl px-4 py-2 text-sm"
+                  />
+                  <button 
+                    onClick={async () => {
+                      if (!newCategory.id || !newCategory.name) return;
+                      try {
+                        await setDoc(doc(db, 'categories', newCategory.id), newCategory);
+                        setNewCategory({ id: '', name: '' });
+                      } catch (err) {
+                        console.error(err);
+                        alert('Failed to add category');
+                      }
+                    }}
+                    className="bg-primary hover:bg-button-hover text-white px-6 py-2 rounded-xl font-bold transition-colors"
+                  >
+                    Add
+                  </button>
+                </div>
+              </div>
+
+              {categories.length > 0 ? (
+                <div className="space-y-3">
+                  {categories.map(category => (
+                    <div key={category.id} className="flex flex-col sm:flex-row sm:items-center justify-between bg-background p-4 rounded-lg border border-border gap-4">
+                      <div>
+                        <span className="font-bold block">{category.name}</span>
+                        <span className="text-sm text-text-secondary">ID: {category.id}</span>
+                      </div>
+                      <button 
+                        onClick={async () => {
+                          if (window.confirm('Are you sure you want to delete this category?')) {
+                            try {
+                              await deleteDoc(doc(db, 'categories', category.id));
+                            } catch (error) {
+                              console.error('Error deleting category:', error);
+                              alert('Failed to delete category.');
+                            }
+                          }
+                        }}
+                        className="text-error hover:text-red-400 p-2 hover:bg-red-500/10 rounded-lg transition-colors flex items-center gap-2"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        <span className="sr-only sm:not-sr-only sm:text-sm">Delete</span>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-text-secondary text-center py-8">No categories found.</p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Manage Products Modal */}
       {isManageProductsOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
@@ -349,7 +444,7 @@ export function Admin() {
                         <img src={product.beforeImageUrl || product.imageUrl} alt={product.title} className="w-12 h-12 rounded object-cover" />
                         <div>
                           <span className="font-bold block">{product.title}</span>
-                          <span className="text-sm text-text-secondary capitalize">{product.category === 'cc' ? 'CC (Colour Correction)' : product.category} • {formatPrice(product.price)}</span>
+                          <span className="text-sm text-text-secondary capitalize">{categories.find(c => c.id === product.category)?.name || (product.category === 'cc' ? 'CC (Colour Correction)' : product.category)} • {formatPrice(product.price)}</span>
                         </div>
                       </div>
                       <button 

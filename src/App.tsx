@@ -5,10 +5,9 @@ import { ThemeProvider } from './components/ThemeProvider';
 import { Chatbot } from './components/Chatbot';
 import { motion, AnimatePresence } from 'motion/react';
 import React, { useEffect, Suspense, lazy } from 'react';
-import { useAppStore, Product } from './store';
+import { useAppStore, Product, Category } from './store';
 import { collection, onSnapshot, writeBatch, doc, getDocs } from 'firebase/firestore';
 import { db } from './lib/firebase';
-import { mockProducts } from './data';
 
 const Home = lazy(() => import('./pages/Home').then(m => ({ default: m.Home })));
 const Products = lazy(() => import('./pages/Products').then(m => ({ default: m.Products })));
@@ -70,25 +69,14 @@ function AnimatedRoutes() {
 export default function App() {
   const products = useAppStore(state => state.products);
     const setProducts = useAppStore(state => state.setProducts);
+  const setCategories = useAppStore(state => state.setCategories);
   const setCurrency = useAppStore(state => state.setCurrency);
 
   useEffect(() => {
     setCurrency('INR');
     
     const unsubscribe = onSnapshot(collection(db, 'products'), async (snapshot) => {
-      if (snapshot.empty) {
-        // Only seed once if totally empty
-        try {
-          const batch = writeBatch(db);
-          mockProducts.forEach(p => {
-            const docRef = doc(collection(db, 'products'), p.id);
-            batch.set(docRef, p);
-          });
-          await batch.commit();
-        } catch(e) {
-          console.error("Seeding failed or permission denied", e);
-        }
-      } else {
+      if (!snapshot.empty) {
         const firebaseProducts = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Product));
         setProducts(firebaseProducts);
       }
@@ -97,8 +85,20 @@ export default function App() {
     });
 
     
-    return () => unsubscribe();
-  }, [setProducts, setCurrency]); // remove products and updateProduct from deps so it doesn't trigger on every product update
+    const unsubscribeCategories = onSnapshot(collection(db, 'categories'), (snapshot) => {
+      if (!snapshot.empty) {
+        const firebaseCategories = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Category));
+        setCategories(firebaseCategories);
+      } else {
+        setCategories([]);
+      }
+    });
+
+    return () => {
+      unsubscribe();
+      unsubscribeCategories();
+    };
+  }, [setProducts, setCurrency, setCategories]); // remove products and updateProduct from deps so it doesn't trigger on every product update
 
   return (
     <ThemeProvider>

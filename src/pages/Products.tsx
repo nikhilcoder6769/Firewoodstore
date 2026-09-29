@@ -1,4 +1,4 @@
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { ProductCard } from '../components/ProductCard';
 import { ProductCardSkeleton } from '../components/ProductCardSkeleton';
 import { SEO } from '../components/SEO';
@@ -7,29 +7,39 @@ import { Filter, Search } from 'lucide-react';
 import { useAppStore } from '../store';
 import { formatPrice } from '../lib/currency';
 
-const formatCategory = (cat: string) => {
-  if (cat === 'cc') return 'CC (Colour Correction)';
-  return cat.charAt(0).toUpperCase() + cat.slice(1);
-};
+// Dynamic formatCategory using store
 
 export function Products() {
   const products = useAppStore(state => state.products);
-  const {  } = useAppStore();
+  const { categories } = useAppStore();
+  const formatCategory = (cat: string) => {
+    const found = categories.find(c => c.id === cat);
+    if (found) return found.name;
+    if (cat === 'cc') return 'CC (Colour Correction)';
+    if (cat === 'tools') return 'Tools & Plugins';
+    return cat.charAt(0).toUpperCase() + cat.slice(1);
+  };
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const categoryFilter = searchParams.get('category');
   const creatorFilter = searchParams.get('creator');
   
   const [searchQuery, setSearchQuery] = useState('');
-  const [appliedPriceRange, setAppliedPriceRange] = useState<number>(100);
+  const [appliedPriceRange, setAppliedPriceRange] = useState<number>(10000);
   const isLoading = products.length === 0;
   
   const [localCategory, setLocalCategory] = useState<string | null>(categoryFilter);
   const [localCreator, setLocalCreator] = useState<string | null>(creatorFilter);
-  const [localPriceRange, setLocalPriceRange] = useState<number>(100);
+  const [localPriceRange, setLocalPriceRange] = useState<number>(10000);
+
+  useEffect(() => {
+    setLocalCategory(categoryFilter);
+    setLocalCreator(creatorFilter);
+  }, [categoryFilter, creatorFilter]);
   
   const [showFilters, setShowFilters] = useState(false);
 
-  const categories = Array.from(new Set(products.map(p => p.category)));
+  const categoryIds = categories.length > 0 ? categories.map(c => c.id) : Array.from(new Set(products.map(p => p.category)));
   const creators = Array.from(new Set(products.map(p => p.creator).filter(Boolean))) as string[];
 
   const displayedProducts = useMemo(() => {
@@ -53,7 +63,7 @@ export function Products() {
     } else {
       searchParams.delete('creator');
     }
-    setSearchParams(searchParams);
+    setSearchParams(new URLSearchParams(searchParams.toString()));
     setAppliedPriceRange(localPriceRange);
     
     if (window.innerWidth < 768) {
@@ -90,7 +100,7 @@ export function Products() {
                   <button
                     key={product.id}
                     onClick={() => {
-                      setSearchQuery(product.title);
+                      navigate(`/product/${product.id}`);
                     }}
                     className="w-full text-left px-4 py-3 hover:bg-border/50 text-sm border-b border-border last:border-0 transition-colors"
                   >
@@ -133,7 +143,7 @@ export function Products() {
                     />
                     <span className="text-sm">All</span>
                   </label>
-                  {categories.map(cat => (
+                  {categoryIds.map(cat => (
                     <label key={cat} className="flex items-center gap-2 cursor-pointer">
                       <input 
                         type="radio" 
@@ -188,15 +198,15 @@ export function Products() {
                 <input 
                   type="range" 
                   min="0" 
-                  max="100" 
-                  step="5"
+                  max="10000" 
+                  step="500"
                   value={localPriceRange}
                   onChange={(e) => setLocalPriceRange(Number(e.target.value))}
                   className="w-full h-2 bg-border rounded-lg appearance-none cursor-pointer accent-primary"
                 />
                 <div className="flex justify-between text-xs text-text-secondary mt-2">
                   <span>{formatPrice(0)}</span>
-                  <span>{formatPrice(100)}+</span>
+                  <span>{formatPrice(10000)}+</span>
                 </div>
               </div>
 
